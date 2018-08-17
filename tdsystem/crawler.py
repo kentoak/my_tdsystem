@@ -56,7 +56,7 @@ if __name__ == '__main__':
     baseurl = 'http://www.tdsystem.co.jp/'
     years = Crawler.fetchYears(baseurl)
     for y in years:
-        if y == '2019': # TODO: Tentative code
+        if y == '2019':  # TODO: Tentative code
             continue
         for m in range(1, 12):
             Crawler.fetchMeets(baseurl, y, m)
