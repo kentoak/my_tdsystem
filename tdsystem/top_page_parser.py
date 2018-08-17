@@ -30,7 +30,7 @@ class TopPageParser(Parser):
 
             b = tds[3].find('button')
             if b:
-                meet['g'] = b.get('value')
+                meet['g_id'] = b.get('value')
 
             print(meet)
 
