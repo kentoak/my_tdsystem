@@ -40,10 +40,11 @@ class Crawler:
             return years
 
     @staticmethod
-    def fetchMeets(baseurl: str, year: str):
+    def fetchMeets(baseurl: str, year: str, month: str):
         req = urllib.request.Request('{}?{}'.format(
             baseurl, urllib.parse.urlencode({
-                'Y': year
+                'Y': year,
+                'M': month
             })))
         with Crawler.fetch(req) as res:
             soup = BeautifulSoup(res, 'lxml')
@@ -55,4 +56,7 @@ if __name__ == '__main__':
     baseurl = 'http://www.tdsystem.co.jp/'
     years = Crawler.fetchYears(baseurl)
     for y in years:
-        Crawler.fetchMeets(baseurl, y)
+        if y == '2019': # TODO: Tentative code
+            continue
+        for m in range(1, 12):
+            Crawler.fetchMeets(baseurl, y, m)
