@@ -1,9 +1,10 @@
 import re
-
 from typing import List
 
+from tdsystem.parser import Parser
 
-class TopPageParser:
+
+class TopPageParser(Parser):
     @staticmethod
     def getYears(form) -> List[str]:
         ret = []
@@ -18,9 +19,11 @@ class TopPageParser:
             tds = tr.find_all('td')
             if len(tds) < 4:
                 continue
-            meet['days'] = TopPageParser.getDays(tds[0].get_text())
-            meet['name'] = tds[1].get_text()
-            meet['venue'] = tds[2].get_text()
+            meet['days'] = TopPageParser.getDays(
+                TopPageParser.normalize(tds[0].get_text()))
+            meet['name'] = TopPageParser.normalize(tds[1].get_text())
+            meet['venue'] = TopPageParser.normalize(tds[2].get_text())
+
             b = tds[3].find('button')
             if b:
                 meet['g'] = b.get('value')
