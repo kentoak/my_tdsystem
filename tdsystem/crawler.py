@@ -1,10 +1,11 @@
 import time
 import urllib.request
-from tdsystem.top_page_parser import TopPageParser
 from logging import INFO, Formatter, StreamHandler, getLogger
 from typing import List
 
 from bs4 import BeautifulSoup
+
+from tdsystem.top_page_parser import TopPageParser
 
 logger = getLogger(__name__)
 handler = StreamHandler()
@@ -49,7 +50,7 @@ class Crawler:
         with Crawler.fetch(req) as res:
             soup = BeautifulSoup(res, 'lxml')
             TopPageParser.getMeets(
-                soup.find('form', attrs={'name': 'gamelist'}))
+                year, month, soup.find('form', attrs={'name': 'gamelist'}))
 
 
 if __name__ == '__main__':
