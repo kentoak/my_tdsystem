@@ -85,11 +85,11 @@ class MonthPageParser(Parser):
 
             # Process venue
             venue_text = self.normalize(tds[2].get_text())
-            m = MonthPageParser.SHORT_COURSE_PAT.search(venue_text)
+            m = self.__class__.SHORT_COURSE_PAT.search(venue_text)
             if m:
                 meet.course = Course(m.group(1))
                 meet.venue = venue_text[0:m.span()[0]]
-            m = MonthPageParser.LONG_COURSE_PAT.search(venue_text)
+            m = self.__class__.LONG_COURSE_PAT.search(venue_text)
             if m:
                 meet.course = Course(m.group(1))
                 meet.venue = venue_text[0:m.span()[0]]
@@ -107,24 +107,24 @@ class MonthPageParser(Parser):
         ret = []
         if not days:
             return None
-        for m in MonthPageParser.DATE_PAT.finditer(days):
+        for m in self.__class__.DATE_PAT.finditer(days):
             ret.append(datetime.date(self.year, self.month, int(m.group(1))))
         return ret
 
     VenueInfo = namedtuple('VenueInfo', ('name', 'COURSE'))
 
     def process_venue(self, venue_text: str) -> VenueInfo:
-        m = MonthPageParser.SHORT_COURSE_PAT.search(venue_text)
+        m = self.__class__.SHORT_COURSE_PAT.search(venue_text)
         if m:
-            return self.VenueInfo(
+            return self.__class__.VenueInfo(
                 name=venue_text[0:m.span()[0]], course='short')
 
-        m = MonthPageParser.LONG_COURSE_PAT.search(venue_text)
+        m = self.__class__.LONG_COURSE_PAT.search(venue_text)
         if m:
-            return MonthPageParser.VenueInfo(
+            return self.__class__.VenueInfo(
                 name=venue_text[0:m.span()[0]], course='long')
 
-        return MonthPageParser.VenueInfo(name=venue_text)
+        return self.__class__.VenueInfo(name=venue_text)
 
 
 if __name__ == '__main__':

@@ -135,9 +135,9 @@ class RecordPageParser(Parser):
             return None
         txt = self.normalize(td.get_text())
         if txt and re.match('[0-9]+', txt):
-            return RecordPageParser.RowType.RECORD
+            return self.__class__.RowType.RECORD
         else:
-            return RecordPageParser.RowType.LAP
+            return self.__class__.RowType.LAP
 
 
 if __name__ == '__main__':

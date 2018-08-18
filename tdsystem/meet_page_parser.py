@@ -72,17 +72,17 @@ class MeetPageParser(Parser):
                 txt = self.normalize(td.get_text())
                 if not txt:
                     continue
-                m = self.SEX_PAT.match(txt)
+                m = self.__class__.SEX_PAT.match(txt)
                 if m:
                     r.sex = Sex(m.group(0))
                     continue
-                m = self.INDV_DIST_PAT.match(txt)
+                m = self.__class__.INDV_DIST_PAT.match(txt)
                 if m:
                     r.distance = int(m.group(1))
-                m = self.RELAY_DIST_PAT.match(txt)
+                m = self.__class__.RELAY_DIST_PAT.match(txt)
                 if m:
                     r.distance = int(m.group(1)) * 4
-                m = self.STYLE_PAT.match(txt)
+                m = self.__class__.STYLE_PAT.match(txt)
                 if m:
                     r.style = Style(m.group(0))
             button = tr.find('button')
