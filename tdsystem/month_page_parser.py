@@ -29,12 +29,12 @@ class Meet:
         self.venue = venue
         self.q_params = q_params
 
-    def addDate(self, date: datetime.date):
+    def add_date(self, date: datetime.date):
         if not self.dates:
             self.dates = []
         self.dates.append(date)
 
-    def addQParam(self, key: str, val: str):
+    def add_q_param(self, key: str, val: str):
         if not self.q_params:
             self.q_params = {}
         self.q_params[key] = val
@@ -50,14 +50,14 @@ class MonthPageParser(Parser):
         self.month = month
         self.page = page
 
-    def __getMeetQueryParams(self, form) -> Dict[str, str]:
+    def __get_meet_query_params(self, form: Tag) -> Dict[str, str]:
         params = {}
         params['action'] = form.get('action')
         for input in form.find_all('input', attrs={'type': 'hidden'}):
             params[input.get('name')] = input.get('value')
         return params
 
-    def getAvailableYears(self) -> List[str]:
+    def get_available_years(self) -> List[str]:
         form = self.page.find('form', attrs={'name': 'SelectYear'})
         if not form:
             return None
@@ -69,18 +69,18 @@ class MonthPageParser(Parser):
     SHORT_COURSE_PAT = re.compile(r'\((25m)\)')
     LONG_COURSE_PAT = re.compile(r'\((50m)\)')
 
-    def getMeets(self) -> List[Meet]:
+    def get_meets(self) -> List[Meet]:
         form = self.page.find('form', attrs={'name': 'gamelist'})
         if not form:
             return None
-        params = self.__getMeetQueryParams(form)
+        params = self.__get_meet_query_params(form)
         ms = []
         for tr in form.find_all('tr'):
             meet = Meet(q_params=params.copy())
             tds = tr.find_all('td')
             if len(tds) < 4:
                 continue
-            meet.dates = self.getDays(self.normalize(tds[0].get_text()))
+            meet.dates = self.get_days(self.normalize(tds[0].get_text()))
             meet.name = self.normalize(tds[1].get_text())
 
             # Process venue
@@ -96,14 +96,14 @@ class MonthPageParser(Parser):
 
             b = tds[3].find('button')
             if b:
-                meet.addQParam(b.get('name'), b.get('value'))
+                meet.add_q_param(b.get('name'), b.get('value'))
 
             ms.append(meet)
         return ms
 
     DATE_PAT = re.compile(r'([0-9]+)日\([日月火水木金土・祝]+\)')
 
-    def getDays(self, days: str) -> List[datetime.datetime]:
+    def get_days(self, days: str) -> List[datetime.datetime]:
         ret = []
         if not days:
             return None
@@ -113,7 +113,7 @@ class MonthPageParser(Parser):
 
     VenueInfo = namedtuple('VenueInfo', ('name', 'COURSE'))
 
-    def processVenue(self, venue_text: str) -> VenueInfo:
+    def process_venue(self, venue_text: str) -> VenueInfo:
         m = MonthPageParser.SHORT_COURSE_PAT.search(venue_text)
         if m:
             return self.VenueInfo(
@@ -137,6 +137,6 @@ if __name__ == '__main__':
     with urllib.request.urlopen(req) as res:
         page = BeautifulSoup(res, 'lxml')
         p = MonthPageParser(year=2018, month=8, page=page)
-        ms = p.getMeets()
+        ms = p.get_meets()
         for m in ms:
             print(m)

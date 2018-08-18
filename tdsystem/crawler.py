@@ -33,14 +33,14 @@ class Crawler:
         return urllib.request.urlopen(url)
 
     @staticmethod
-    def fetchYears(url: str) -> List[str]:
+    def fetch_years(url: str) -> List[str]:
         with Crawler.fetch(url) as res:
             p = MonthPageParser(BeautifulSoup(res, 'lxml'))
             years = p.getAvailableYears()
             return years
 
     @staticmethod
-    def fetchMeets(baseurl: str, year: str, month: str) -> List[Meet]:
+    def fetch_meets(baseurl: str, year: str, month: str) -> List[Meet]:
         req = urllib.request.Request('{}?{}'.format(
             baseurl, urllib.parse.urlencode({
                 'Y': year,
@@ -56,11 +56,11 @@ class Crawler:
 
 if __name__ == '__main__':
     baseurl = 'http://www.tdsystem.co.jp/'
-    years = Crawler.fetchYears(baseurl)
+    years = Crawler.fetch_years(baseurl)
     for y in years:
         if y == '2019':  # TODO: Tentative code
             continue
         for m in range(1, 12):
-            meets = Crawler.fetchMeets(baseurl, y, m)
+            meets = Crawler.fetch_meets(baseurl, y, m)
             for meet in meets:
                 print(meet)

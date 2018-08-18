@@ -40,7 +40,7 @@ class Race:
         return 'sex={}, distance={}, style={}, q_params={}'.format(
             self.sex, self.distance, self.style, self.q_params)
 
-    def addQParam(self, key: str, val: str):
+    def add_q_param(self, key: str, val: str):
         if not self.q_params:
             self.q_params = {}
         self.q_params[key] = val
@@ -50,7 +50,7 @@ class MeetPageParser(Parser):
     def __init__(self, page: Tag):
         self.page = page
 
-    def __getRaceQueryParams(self, form) -> Dict[str, str]:
+    def __get_race_query_params(self, form) -> Dict[str, str]:
         params = {}
         params['action'] = form.get('action')
         for input in form.find_all('input', attrs={'type': 'hidden'}):
@@ -62,10 +62,10 @@ class MeetPageParser(Parser):
     RELAY_DIST_PAT = re.compile(r'4×([0-9]+)m')
     STYLE_PAT = re.compile(r'自由形|背泳ぎ|平泳ぎ|バタフライ|個人メドレー|フリーリレー|メドレーリレー')
 
-    def getRaces(self) -> List[Race]:
+    def get_races(self) -> List[Race]:
         rs = []
         form = self.page.find('form', attrs={'name': 'gamelist'})
-        params = self.__getRaceQueryParams(form)
+        params = self.__get_race_query_params(form)
         for tr in form.find_all('tr'):
             r = Race(q_params=params.copy())
             for td in tr.find_all('td'):
@@ -87,7 +87,7 @@ class MeetPageParser(Parser):
                     r.style = Style(m.group(0))
             button = tr.find('button')
             if button:
-                r.addQParam(button.get('name'), button.get('value'))
+                r.add_q_param(button.get('name'), button.get('value'))
             rs.append(r)
         return rs
 
@@ -96,8 +96,7 @@ if __name__ == '__main__':
     with urllib.request.urlopen(
             'http://www.tdsystem.co.jp/ProList.php?Y=2018&M=6&GL=0&G=154'
     ) as res:
-        soup = BeautifulSoup(res, 'lxml')
-        p = MeetPageParser(soup)
-        rs = p.getRaces()
+        p = MeetPageParser(BeautifulSoup(res, 'lxml'))
+        rs = p.get_races()
         for r in rs:
             print(r)
