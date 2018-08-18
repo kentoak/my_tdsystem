@@ -2,7 +2,7 @@ import re
 import urllib.request
 from datetime import timedelta
 from enum import Enum
-from typing import List
+from typing import Dict, List
 
 from bs4 import BeautifulSoup
 from bs4.element import Tag
@@ -37,13 +37,38 @@ class Record:
     def addLap(self, mins: int = 0, secs: int = 0, one_tenth_secs: int = 0):
         if not self.lap:
             self.lap = []
-        self.lap.append(timedelta(
-            minutes=mins, seconds=secs, milliseconds=one_tenth_secs * 10))
+        self.lap.append(
+            timedelta(
+                minutes=mins, seconds=secs, milliseconds=one_tenth_secs * 10))
 
 
 class RecordPageParser(Parser):
     def __init__(self, page: Tag):
         self.page = page
+
+    def getQueryParams(self) -> Dict[str, str]:
+        form = self.page.find('form', attrs={'name': 'formclasslist'})
+        if not form:
+            return None
+        params = {}
+        for input in form.find_all('input', attrs={'type': 'hidden'}):
+            params[input.get('name')] = input.get('value')
+        return params
+
+    def getAvailableClasses(self) -> Dict[str, str]:
+        form = self.page.find('form', attrs={'name': 'formclasslist'})
+        if not form:
+            return None
+        select = form.find('select')
+        if not select:
+            return None
+        classes = {}
+        for c in select.find_all('option'):
+            value = c.get('value')
+            if value == '999':  # Wildcard
+                continue
+            classes[value] = self.normalize(c.get_text())
+        return classes
 
     def getRecords(self) -> List[Record]:
         for t in self.page.find_all('table'):
@@ -72,7 +97,7 @@ class RecordPageParser(Parser):
 
             if rt == RecordPageParser.RowType.RECORD:
                 for i, td in enumerate(tr.find_all('td')):
-                    txt = Parser.normalize(td.get_text())
+                    txt = self.normalize(td.get_text())
                     if not txt:
                         continue
                     if i == 0:
@@ -89,7 +114,7 @@ class RecordPageParser(Parser):
                 if not rt:
                     continue
                 for td in rt.find_all('td'):
-                    txt = Parser.normalize(td.get_text())
+                    txt = self.normalize(td.get_text())
                     if not txt:
                         continue
                     m = RecordPageParser.RECORD_PAT.match(txt)
@@ -107,8 +132,7 @@ class RecordPageParser(Parser):
         td = tr.find('td')  # Get 1st td
         if not td:
             return None
-
-        txt = Parser.normalize(td.get_text())
+        txt = self.normalize(td.get_text())
         if txt and re.match('[0-9]+', txt):
             return RecordPageParser.RowType.RECORD
         else:
@@ -120,8 +144,18 @@ if __name__ == '__main__':
             'http://www.tdsystem.co.jp/Record.php?' +
             'Y=2018&M=6&G=154&GL=0&L=1&Page=ProList.php&P=10&S=2&Lap=1&Cls=50'
     ) as res:
-        soup = BeautifulSoup(res, 'lxml')
-        p = RecordPageParser(soup)
-        rs = p.getRecords()
-        for r in rs:
-            print(r)
+        p = RecordPageParser(BeautifulSoup(res, 'lxml'))
+        params = p.getQueryParams()
+        classes = p.getAvailableClasses()
+
+    for cls in classes.keys():
+        params['Cls'] = cls
+        req = urllib.request.Request('{}?{}'.format(
+            'http://www.tdsystem.co.jp/Record.php',
+            urllib.parse.urlencode(params)))
+        print(req.get_full_url())
+        with urllib.request.urlopen(req) as res:
+            p = RecordPageParser(BeautifulSoup(res, 'lxml'))
+            rs = p.getRecords()
+            for r in rs:
+                print(r)
