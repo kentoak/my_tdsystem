@@ -71,10 +71,12 @@ class RecordPageParser(Parser):
                 continue
 
             if rt == RecordPageParser.RowType.RECORD:
-                for td in tr.find_all('td'):
+                for i, td in enumerate(tr.find_all('td')):
                     txt = Parser.normalize(td.get_text())
                     if not txt:
                         continue
+                    if i == 0:
+                        r.rank = int(txt)
                     m = RecordPageParser.RECORD_PAT.match(txt)
                     if not m:
                         continue
