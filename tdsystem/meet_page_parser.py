@@ -1,7 +1,7 @@
 import re
 import urllib.request
 from enum import Enum
-from typing import List
+from typing import Dict, List
 
 from bs4 import BeautifulSoup
 from bs4.element import Tag
@@ -26,20 +26,36 @@ class Style(Enum):
 
 
 class Race:
-    def __init__(self, sex: Sex = None, distance: int = 0,
-                 style: Style = None):
+    def __init__(self,
+                 sex: Sex = None,
+                 distance: int = 0,
+                 style: Style = None,
+                 q_params: Dict[str, str] = None):
         self.sex = sex
         self.distance = distance
         self.style = style
+        self.q_params = q_params
 
     def __str__(self):
-        return 'sex={}, distance={}, style={}'.format(self.sex, self.distance,
-                                                      self.style)
+        return 'sex={}, distance={}, style={}, q_params={}'.format(
+            self.sex, self.distance, self.style, self.q_params)
+
+    def addQParam(self, key: str, val: str):
+        if not self.q_params:
+            self.q_params = {}
+        self.q_params[key] = val
 
 
 class MeetPageParser(Parser):
     def __init__(self, page: Tag):
         self.page = page
+
+    def __getRaceQueryParams(self, form) -> Dict[str, str]:
+        params = {}
+        params['action'] = form.get('action')
+        for input in form.find_all('input', attrs={'type': 'hidden'}):
+            params[input.get('name')] = input.get('value')
+        return params
 
     SEX_PAT = re.compile(r'女子|男子|混合')
     INDV_DIST_PAT = re.compile(r'([0-9]+)m')
@@ -49,8 +65,9 @@ class MeetPageParser(Parser):
     def getRaces(self) -> List[Race]:
         rs = []
         form = self.page.find('form', attrs={'name': 'gamelist'})
+        params = self.__getRaceQueryParams(form)
         for tr in form.find_all('tr'):
-            r = Race()
+            r = Race(q_params=params.copy())
             for td in tr.find_all('td'):
                 txt = self.normalize(td.get_text())
                 if not txt:
@@ -68,6 +85,9 @@ class MeetPageParser(Parser):
                 m = self.STYLE_PAT.match(txt)
                 if m:
                     r.style = Style(m.group(0))
+            button = tr.find('button')
+            if button:
+                r.addQParam(button.get('name'), button.get('value'))
             rs.append(r)
         return rs
 
