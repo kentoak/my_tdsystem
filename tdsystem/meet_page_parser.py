@@ -43,7 +43,7 @@ class MeetPageParser(Parser):
 
     SEX_PAT = re.compile(r'女子|男子|混合')
     INDV_DIST_PAT = re.compile(r'([0-9]+)m')
-    RELAY_DIST_PAT = re.compile(r'4x([0-9]+)m')
+    RELAY_DIST_PAT = re.compile(r'4×([0-9]+)m')
     STYLE_PAT = re.compile(r'自由形|背泳ぎ|平泳ぎ|バタフライ|個人メドレー|フリーリレー|メドレーリレー')
 
     def getRaces(self) -> List[Race]:
