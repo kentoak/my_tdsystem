@@ -84,7 +84,7 @@ class RecordPageParser(Parser):
             return True
         return False
 
-    RECORD_PAT = re.compile(r'([0-9]*):*([0-9]+).([0-9]+)')
+    RECORD_PAT = re.compile(r'([0-9]{0,2}):{0,1}([0-9]{2}).([0-9]{2})')
 
     RowType = Enum('RowType', ('RECORD', 'LAP'))
 
@@ -107,7 +107,7 @@ class RecordPageParser(Parser):
                     if not m:
                         continue
                     r.set_record(
-                        mins=int(m.group(1)),
+                        mins=int(m.group(1)) if len(m.group(1)) > 0 else 0,
                         secs=int(m.group(2)),
                         one_tenth_secs=int(m.group(3)))
             elif rt == RecordPageParser.RowType.LAP:
@@ -122,7 +122,7 @@ class RecordPageParser(Parser):
                     if not m:
                         continue
                     r.add_lap(
-                        mins=int(m.group(1)),
+                        mins=int(m.group(1)) if len(m.group(1)) > 0 else 0,
                         secs=int(m.group(2)),
                         one_tenth_secs=int(m.group(3)))
                 rs.append(r)
