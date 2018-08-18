@@ -22,7 +22,7 @@ class Meet:
                  name: str = None,
                  course: Course = None,
                  venue: str = None,
-                 q_params: Dict[str, int] = None):
+                 q_params: Dict[str, str] = None):
         self.dates = dates
         self.name = name
         self.course = course
@@ -34,7 +34,7 @@ class Meet:
             self.dates = []
         self.dates.append(date)
 
-    def addQParam(self, key: str, val: int):
+    def addQParam(self, key: str, val: str):
         if not self.q_params:
             self.q_params = {}
         self.q_params[key] = val
@@ -49,6 +49,13 @@ class MonthPageParser(Parser):
         self.year = year
         self.month = month
         self.page = page
+
+    def __getMeetQueryParams(self, form) -> Dict[str, str]:
+        params = {}
+        params['action'] = form.get('action')
+        for input in form.find_all('input', attrs={'type': 'hidden'}):
+            params[input.get('name')] = input.get('value')
+        return params
 
     def getAvailableYears(self) -> List[str]:
         form = self.page.find('form', attrs={'name': 'SelectYear'})
@@ -66,9 +73,10 @@ class MonthPageParser(Parser):
         form = self.page.find('form', attrs={'name': 'gamelist'})
         if not form:
             return None
+        params = self.__getMeetQueryParams(form)
         ms = []
         for tr in form.find_all('tr'):
-            meet = Meet()
+            meet = Meet(q_params=params.copy())
             tds = tr.find_all('td')
             if len(tds) < 4:
                 continue
@@ -88,7 +96,7 @@ class MonthPageParser(Parser):
 
             b = tds[3].find('button')
             if b:
-                meet.addQParam(b.get('name'), int(b.get('value')))
+                meet.addQParam(b.get('name'), b.get('value'))
 
             ms.append(meet)
         return ms
@@ -128,7 +136,7 @@ if __name__ == '__main__':
         })))
     with urllib.request.urlopen(req) as res:
         page = BeautifulSoup(res, 'lxml')
-        p = MonthPageParser(2018, 8, page)
+        p = MonthPageParser(year=2018, month=8, page=page)
         ms = p.getMeets()
         for m in ms:
             print(m)
