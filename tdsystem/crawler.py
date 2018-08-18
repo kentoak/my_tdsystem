@@ -5,7 +5,7 @@ from typing import List
 
 from bs4 import BeautifulSoup
 
-from tdsystem.top_page_parser import TopPageParser
+from tdsystem.month_page_parser import Meet, MonthPageParser
 
 logger = getLogger(__name__)
 handler = StreamHandler()
@@ -35,22 +35,23 @@ class Crawler:
     @staticmethod
     def fetchYears(url: str) -> List[str]:
         with Crawler.fetch(url) as res:
-            soup = BeautifulSoup(res, 'lxml')
-            years = TopPageParser.getYears(
-                soup.find('form', attrs={'name': 'SelectYear'}))
+            p = MonthPageParser(BeautifulSoup(res, 'lxml'))
+            years = p.getAvailableYears()
             return years
 
     @staticmethod
-    def fetchMeets(baseurl: str, year: str, month: str):
+    def fetchMeets(baseurl: str, year: str, month: str) -> List[Meet]:
         req = urllib.request.Request('{}?{}'.format(
             baseurl, urllib.parse.urlencode({
                 'Y': year,
                 'M': month
             })))
         with Crawler.fetch(req) as res:
-            soup = BeautifulSoup(res, 'lxml')
-            TopPageParser.getMeets(
-                year, month, soup.find('form', attrs={'name': 'gamelist'}))
+            p = MonthPageParser(
+                page=BeautifulSoup(res, 'lxml'),
+                year=int(year),
+                month=int(month))
+            return p.getMeets()
 
 
 if __name__ == '__main__':
@@ -60,4 +61,6 @@ if __name__ == '__main__':
         if y == '2019':  # TODO: Tentative code
             continue
         for m in range(1, 12):
-            Crawler.fetchMeets(baseurl, y, m)
+            meets = Crawler.fetchMeets(baseurl, y, m)
+            for meet in meets:
+                print(meet)
