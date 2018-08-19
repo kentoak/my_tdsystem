@@ -99,15 +99,21 @@ class RecordPageParser(Parser):
 
     RowType = Enum('RowType', ('RECORD', 'LAP'))
 
+    def __init_record(self):
+        return Record(q_params=self.q_params.copy(), age_cls=self.age_cls)
+
     def __get_records(self, table: Tag) -> List[Record]:
         rs = []
-        r = Record(q_params=self.q_params.copy(), age_cls=self.age_cls)
+        r = self.__init_record()
         for tr in table.find_all('tr', recursive=False):
             rt = self.__get_row_type(tr)
             if not rt:
                 continue
-
             if rt == RecordPageParser.RowType.RECORD:
+                # Store the previous record before processing this new record
+                if r.record:
+                    rs.append(r)
+                    r = self.__init_record()
                 for i, td in enumerate(tr.find_all('td')):
                     txt = self.normalize(td.get_text())
                     if not txt:
@@ -136,8 +142,6 @@ class RecordPageParser(Parser):
                         mins=int(m.group(1)) if len(m.group(1)) > 0 else 0,
                         secs=int(m.group(2)),
                         one_tenth_secs=int(m.group(3)))
-                rs.append(r)
-                r = Record(q_params=self.q_params.copy(), age_cls=self.age_cls)
         return rs
 
     def __get_row_type(self, tr: Tag) -> RowType:
