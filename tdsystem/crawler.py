@@ -1,11 +1,14 @@
+import pickle
 import time
 import urllib.request
 from logging import INFO, Formatter, StreamHandler, getLogger
-from typing import List
+from typing import Dict, List
 
 from bs4 import BeautifulSoup
 
+from tdsystem.meet_page_parser import MeetPageParser, Race
 from tdsystem.month_page_parser import Meet, MonthPageParser
+from tdsystem.record_page_parser import Record, RecordPageParser
 
 logger = getLogger(__name__)
 handler = StreamHandler()
@@ -20,7 +23,7 @@ class Crawler:
     INTERVAL_SEC = 5
 
     @staticmethod
-    def fetch(url):
+    def __fetch(url):
         if Crawler.prev:
             past = time.time() - Crawler.prev
             wait = 0 if past > Crawler.INTERVAL_SEC else Crawler.INTERVAL_SEC
@@ -34,9 +37,9 @@ class Crawler:
 
     @staticmethod
     def fetch_years(url: str) -> List[str]:
-        with Crawler.fetch(url) as res:
+        with Crawler.__fetch(url) as res:
             p = MonthPageParser(BeautifulSoup(res, 'lxml'))
-            years = p.getAvailableYears()
+            years = p.get_available_years()
             return years
 
     @staticmethod
@@ -46,21 +49,83 @@ class Crawler:
                 'Y': year,
                 'M': month
             })))
-        with Crawler.fetch(req) as res:
+        with Crawler.__fetch(req) as res:
             p = MonthPageParser(
                 page=BeautifulSoup(res, 'lxml'),
                 year=int(year),
                 month=int(month))
-            return p.getMeets()
+            return p.get_meets()
+
+    @staticmethod
+    def fetch_races(baseurl: str, q_params: Dict[str, str]) -> List[Race]:
+        req = urllib.request.Request('{}?{}'.format(
+            baseurl + q_params.pop('action'),
+            urllib.parse.urlencode(q_params)))
+        with Crawler.__fetch(req) as res:
+            p = MeetPageParser(BeautifulSoup(res, 'lxml'))
+            return p.get_races()
+
+    @staticmethod
+    def fetch_records(baseurl: str, q_params: Dict[str, str]) -> List[Record]:
+        url = baseurl + q_params.pop('action')
+        req = urllib.request.Request('{}?{}'.format(
+            url, urllib.parse.urlencode(q_params)))
+        with Crawler.__fetch(req) as res:
+            p = RecordPageParser(BeautifulSoup(res, 'lxml'))
+            params = p.get_query_params()
+            classes = p.get_available_classes()
+        if not params:
+            params = q_params
+        if not classes:
+            classes = {'999': 'DUMMY'}  # Put the wildcard class
+
+        rs = []
+        for cls in classes.keys():
+            params['Cls'] = cls
+            req = urllib.request.Request('{}?{}'.format(
+                url, urllib.parse.urlencode(params)))
+            with urllib.request.urlopen(req) as res:
+                p = RecordPageParser(
+                    BeautifulSoup(res, 'lxml'), params, classes[cls])
+                rs.extend(p.get_records())
+        return rs
+
+
+def crawl_all(base_url: str):
+    years = Crawler.fetch_years(baseurl)
+    for y in years:
+        for m in range(1, 12):
+            meets = Crawler.fetch_meets(baseurl, y, m)
+            for meet in meets:
+                for r in Crawler.fetch_races(baseurl, meet.q_params):
+                    Crawler.fetch_records(baseurl, r.q_params)
+                    # TODO Store somewhere
+
+
+def crawl_records(base_url: str,
+                  record_page_params: Dict[str, str]) -> List[Record]:
+    return Crawler.fetch_records(baseurl, record_page_params)
 
 
 if __name__ == '__main__':
     baseurl = 'http://www.tdsystem.co.jp/'
-    years = Crawler.fetch_years(baseurl)
-    for y in years:
-        if y == '2019':  # TODO: Tentative code
-            continue
-        for m in range(1, 12):
-            meets = Crawler.fetch_meets(baseurl, y, m)
-            for meet in meets:
-                print(meet)
+    rs = crawl_records(
+        baseurl, {
+            'action': 'Record.php',
+            'Y': '2018',
+            'M': '6',
+            'GL': '0',
+            'G': '154',
+            'S': '2',
+            'Lap': '1',
+            'Cls': '999',
+            'L': '1',
+            'P': '10'
+        })
+    with open('records.pickle', 'wb') as f:
+        pickle.dump(rs, f, pickle.HIGHEST_PROTOCOL)
+
+    with open('records.pickle', 'rb') as f:
+        rs = pickle.load(f)
+        for r in rs:
+            print(r)
