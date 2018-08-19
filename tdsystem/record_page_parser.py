@@ -12,22 +12,28 @@ from tdsystem.parser import Parser
 
 class Record:
     def __init__(self,
+                 age_cls: str = None,
                  rank: int = 0,
                  record: timedelta = None,
-                 lap: List[timedelta] = None):
+                 lap: List[timedelta] = None,
+                 q_params: Dict[str, str] = None):
+        self.age_cls = age_cls
         self.rank = rank
         self.record = record
         self.lap = lap
+        self.q_params = q_params
 
     def __str__(self):
-        ret = 'rank={}, record={}, lap=['.format(self.rank, str(self.record))
+        ret = 'age_cls={}, rank={}, record={}, lap=['.format(
+            self.age_cls, self.rank, str(self.record))
         l_txt = ''
         for l in self.lap:
             if len(l_txt) > 0:
                 l_txt += ', '
             l_txt += str(l)
         ret += l_txt
-        ret += ']'
+        ret += '], '
+        ret += 'q_params={}'.format(self.q_params)
         return ret
 
     def set_record(self, mins: int = 0, secs: int = 0,
@@ -44,8 +50,13 @@ class Record:
 
 
 class RecordPageParser(Parser):
-    def __init__(self, page: Tag):
+    def __init__(self,
+                 page: Tag,
+                 q_params: Dict[str, str] = None,
+                 age_cls: str = None):
         self.page = page
+        self.q_params = q_params
+        self.age_cls = age_cls
 
     def get_query_params(self) -> Dict[str, str]:
         form = self.page.find('form', attrs={'name': 'formclasslist'})
@@ -90,7 +101,7 @@ class RecordPageParser(Parser):
 
     def __get_records(self, table: Tag) -> List[Record]:
         rs = []
-        r = Record()
+        r = Record(q_params=self.q_params.copy(), age_cls=self.age_cls)
         for tr in table.find_all('tr', recursive=False):
             rt = self.__get_row_type(tr)
             if not rt:
@@ -126,7 +137,7 @@ class RecordPageParser(Parser):
                         secs=int(m.group(2)),
                         one_tenth_secs=int(m.group(3)))
                 rs.append(r)
-                r = Record()
+                r = Record(q_params=self.q_params.copy(), age_cls=self.age_cls)
         return rs
 
     def __get_row_type(self, tr: Tag) -> RowType:
@@ -156,7 +167,8 @@ if __name__ == '__main__':
             urllib.parse.urlencode(params)))
         print(req.get_full_url())
         with urllib.request.urlopen(req) as res:
-            p = RecordPageParser(BeautifulSoup(res, 'lxml'))
+            p = RecordPageParser(
+                BeautifulSoup(res, 'lxml'), params, classes[cls])
             rs = p.get_records()
             for r in rs:
                 print(r)
