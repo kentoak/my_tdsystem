@@ -109,7 +109,7 @@ class RecordPageParser(Parser):
             rt = self.__get_row_type(tr)
             if not rt:
                 continue
-            if rt == RecordPageParser.RowType.RECORD:
+            if rt == self.__class__.RowType.RECORD:
                 # Store the previous record before processing this new record
                 if r.record:
                     rs.append(r)
@@ -120,14 +120,14 @@ class RecordPageParser(Parser):
                         continue
                     if i == 0:
                         r.rank = int(txt)
-                    m = RecordPageParser.RECORD_PAT.match(txt)
+                    m = self.__class__.RECORD_PAT.match(txt)
                     if not m:
                         continue
                     r.set_record(
                         mins=int(m.group(1)) if len(m.group(1)) > 0 else 0,
                         secs=int(m.group(2)),
                         one_tenth_secs=int(m.group(3)))
-            elif rt == RecordPageParser.RowType.LAP:
+            elif rt == self.__class__.RowType.LAP:
                 rt = tr.find('table')
                 if not rt:
                     continue
@@ -135,7 +135,7 @@ class RecordPageParser(Parser):
                     txt = self.normalize(td.get_text())
                     if not txt:
                         continue
-                    m = RecordPageParser.RECORD_PAT.match(txt)
+                    m = self.__class__.RECORD_PAT.match(txt)
                     if not m:
                         continue
                     r.add_lap(
