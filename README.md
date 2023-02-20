@@ -2,7 +2,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.9-blue.svg?style=flat)](https://www.python.org/downloads/release/python-390/)
 
 # What's tdsystem
-  https://www.tdsystem.co.jp/Record.php?~のページをxml形式にしてrecords.pickleに保存する。
+  https://www.tdsystem.co.jp/Record.php?~ のページをxml形式にしてrecords.pickleに保存する。
  
 # How to use tdsystem
   e.g.) 
