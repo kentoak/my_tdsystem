@@ -14,6 +14,7 @@ class Record:
     def __init__(self,
                  age_cls: str = None,
                  rank: int = 0,
+                 name: str = None,
                  record: timedelta = None,
                  lap: List[timedelta] = None,
                  q_params: Dict[str, str] = None):
@@ -21,11 +22,12 @@ class Record:
         self.rank = rank
         self.record = record
         self.lap = lap
+        self.name = name
         self.q_params = q_params
 
     def __str__(self):
-        ret = 'age_cls={}, rank={}, record={}, lap=['.format(
-            self.age_cls, self.rank, str(self.record))
+        ret = 'age_cls={}, rank={}, name={}, record={}, lap=['.format(
+            self.age_cls, self.rank, self.name, str(self.record))
         l_txt = ''
         if self.lap:
             print("self.lap",self.lap)
@@ -49,6 +51,9 @@ class Record:
         self.lap.append(
             timedelta(
                 minutes=mins, seconds=secs, milliseconds=one_tenth_secs * 10))
+    
+    def set_name(self, name:""):
+        self.name= name
 
 
 class RecordPageParser(Parser):
@@ -108,8 +113,8 @@ class RecordPageParser(Parser):
         rs = []
         r = self.__init_record()
         isLap = False
-        for idx,tr in enumerate(table.find_all('tr', recursive=False)):
-            if idx==3:
+        for idx,tr in enumerate(table.find_all('tr', recursive=False)): ##//written by taoka on 2023/02/20 
+            if idx==3: #lapありなしを判定
                 break
             rt = self.__get_row_type(tr)
             if not rt:
@@ -119,17 +124,24 @@ class RecordPageParser(Parser):
                 isLap = True
 
         for tr in table.find_all('tr', recursive=False):
+            #print(tr)
             rt = self.__get_row_type(tr)
             if not rt:
                 continue
             #print("rt is ,,,,",rt,tr)
             if rt == self.__class__.RowType.RECORD:
                 #print(tr)
+                name=""
                 for i, td in enumerate(tr.find_all('td')):
                     txt = self.normalize(td.get_text())
                     if not txt:
                         continue
                     #print("txt is ...",txt)
+                    #print("td is ...",td)
+                    if '<td valign="top">' in str(td) and not name:
+                        name=td.text
+                        #print("name",name)
+                    r.set_name(name)
                     if i == 0:
                         r.rank = int(txt)
                     m = self.__class__.RECORD_PAT.match(txt)
@@ -145,6 +157,7 @@ class RecordPageParser(Parser):
                         mins=int(m.group(1)) if len(m.group(1)) > 0 else 0,
                         secs=int(m.group(2)),
                         one_tenth_secs=int(m.group(3))) #r.recordを作る
+                    #if td.get('valign'):
                     #print("r.record is ...\n",r.record)
             elif rt == self.__class__.RowType.LAP:
                 rt = tr.find('table')
@@ -191,10 +204,9 @@ class RecordPageParser(Parser):
 
 
 if __name__ == '__main__':
-    with urllib.request.urlopen(
-            'http://www.tdsystem.co.jp/Record.php?' +
-            'Y=2018&M=6&G=154&GL=0&L=1&Page=ProList.php&P=10&S=2&Lap=1&Cls=50'
-    ) as res:
+    ex_url='http://www.tdsystem.co.jp/Record.php?' + 'Y=2018&M=6&G=154&GL=0&L=1&Page=ProList.php&P=10&S=2&Lap=1&Cls=50'
+    print("ex_url is ",ex_url)
+    with urllib.request.urlopen(ex_url) as res:
         p = RecordPageParser(BeautifulSoup(res, 'lxml'))
         params = p.get_query_params()
         classes = p.get_available_classes()

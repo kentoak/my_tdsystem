@@ -1,6 +1,7 @@
 import datetime
 
-from tdsystem.month_page_parser import MonthPageParser
+#from tdsystem.month_page_parser import MonthPageParser
+from month_page_parser import MonthPageParser
 
 
 def test_get_days_1day():
