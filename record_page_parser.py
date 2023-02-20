@@ -27,10 +27,12 @@ class Record:
         ret = 'age_cls={}, rank={}, record={}, lap=['.format(
             self.age_cls, self.rank, str(self.record))
         l_txt = ''
-        for l in self.lap:
-            if len(l_txt) > 0:
-                l_txt += ', '
-            l_txt += str(l)
+        if self.lap:
+            print("self.lap",self.lap)
+            for l in self.lap:
+                if len(l_txt) > 0:
+                    l_txt += ', '
+                l_txt += str(l)
         ret += l_txt
         ret += '], '
         ret += 'q_params={}'.format(self.q_params)
@@ -105,28 +107,45 @@ class RecordPageParser(Parser):
     def __get_records(self, table: Tag) -> List[Record]:
         rs = []
         r = self.__init_record()
+        isLap = False
+        for idx,tr in enumerate(table.find_all('tr', recursive=False)):
+            if idx==3:
+                break
+            rt = self.__get_row_type(tr)
+            if not rt:
+                continue
+            #print("idx",idx,"rt is ,,,,",rt,tr)
+            if rt == self.__class__.RowType.LAP:
+                isLap = True
+
         for tr in table.find_all('tr', recursive=False):
             rt = self.__get_row_type(tr)
             if not rt:
                 continue
+            #print("rt is ,,,,",rt,tr)
             if rt == self.__class__.RowType.RECORD:
-                # Store the previous record before processing this new record
-                if r.record:
-                    rs.append(r)
-                    r = self.__init_record()
+                #print(tr)
                 for i, td in enumerate(tr.find_all('td')):
                     txt = self.normalize(td.get_text())
                     if not txt:
                         continue
+                    #print("txt is ...",txt)
                     if i == 0:
                         r.rank = int(txt)
                     m = self.__class__.RECORD_PAT.match(txt)
+                    #print("m is ...",m)
                     if not m:
                         continue
+                    #print("m is ...",m)
+                    # if len(m.group(1)) > 0:
+                    #     print("m.group(1)",m.group(1))
+                    # print("m.group(2)",m.group(2))
+                    # print("m.group(3)",m.group(3))
                     r.set_record(
                         mins=int(m.group(1)) if len(m.group(1)) > 0 else 0,
                         secs=int(m.group(2)),
-                        one_tenth_secs=int(m.group(3)))
+                        one_tenth_secs=int(m.group(3))) #r.recordを作る
+                    #print("r.record is ...\n",r.record)
             elif rt == self.__class__.RowType.LAP:
                 rt = tr.find('table')
                 if not rt:
@@ -142,14 +161,30 @@ class RecordPageParser(Parser):
                         mins=int(m.group(1)) if len(m.group(1)) > 0 else 0,
                         secs=int(m.group(2)),
                         one_tenth_secs=int(m.group(3)))
+                    #print("r.lap is ...\n",r.lap)
+            # Store the previous record before processing this new record
+            if isLap:
+                if r.lap:
+                    rs.append(r)
+                    r = self.__init_record()
+                #print(r.record)
+            else:
+                if r.record:
+                    rs.append(r)
+                    r = self.__init_record()
+        #print("rs is ...",rs)
         return rs
 
     def __get_row_type(self, tr: Tag) -> RowType:
         td = tr.find('td')  # Get 1st td
+        #print(" Get 1st td",td)
         if not td:
             return None
         txt = self.normalize(td.get_text())
-        if txt and re.match('[0-9]+', txt):
+        #print(" Get 1st td_txt",txt)
+        pattern = r'^\d+$'  # 数字以外の文字を含まない文字列にマッチする正規表現パターン
+        #if txt and re.match('[0-9]+', txt):
+        if txt and re.match(pattern, txt):
             return self.__class__.RowType.RECORD
         else:
             return self.__class__.RowType.LAP
@@ -163,16 +198,19 @@ if __name__ == '__main__':
         p = RecordPageParser(BeautifulSoup(res, 'lxml'))
         params = p.get_query_params()
         classes = p.get_available_classes()
-
-    for cls in classes.keys():
+    #print(params) #{'Y': '2018', 'M': '6', 'G': '154', 'GL': '0', 'S': '2', 'Lap': '1', 'Cls': '50', 'L': '1', 'RG': '1', 'Page': 'ProList.php', 'P': '10'}
+    #print(classes.keys()) #e.g.)dict_keys(['80', '75', '70', '65', '60', '55', '50', '45', '40', '35', '30', '25'])
+    for idx,cls in enumerate(classes.keys()):
+        # if idx==1:
+        #     break
         params['Cls'] = cls
         req = urllib.request.Request('{}?{}'.format(
             'http://www.tdsystem.co.jp/Record.php',
             urllib.parse.urlencode(params)))
-        print(req.get_full_url())
+        #sprint("req.get_full_url():",req.get_full_url())
         with urllib.request.urlopen(req) as res:
-            p = RecordPageParser(
-                BeautifulSoup(res, 'lxml'), params, classes[cls])
+            p = RecordPageParser(BeautifulSoup(res, 'lxml'), params, classes[cls])
             rs = p.get_records()
             for r in rs:
-                print(r)
+                #print("r is ...",r)
+                print(r,"\n")
