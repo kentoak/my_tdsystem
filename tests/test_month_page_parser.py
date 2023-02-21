@@ -2,7 +2,8 @@ import datetime
 
 #from tdsystem.month_page_parser import MonthPageParser
 import sys
-sys.path.append("..")
+import importlib
+sys = importlib.import_module("sys")
 from month_page_parser import MonthPageParser
 
 
