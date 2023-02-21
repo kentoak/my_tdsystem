@@ -52,9 +52,8 @@ class Record:
             timedelta(
                 minutes=mins, seconds=secs, milliseconds=one_tenth_secs * 10))
     
-    def set_name(self, name:""):
+    def set_name(self, name: str=""):
         self.name= name
-
 
 class RecordPageParser(Parser):
     def __init__(self,
