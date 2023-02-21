@@ -2,8 +2,13 @@ import datetime
 
 #from tdsystem.month_page_parser import MonthPageParser
 import sys
+from os.path import dirname, abspath
 import importlib
 sys = importlib.import_module("sys")
+parent_dir = dirname(dirname(dirname(abspath(__file__)))) # 追加
+if parent_dir not in sys.path: # 追加
+    sys.path.append(parent_dir) # 追加
+#from tdsystem.month_page_parser import MonthPageParser
 from month_page_parser import MonthPageParser
 
 
