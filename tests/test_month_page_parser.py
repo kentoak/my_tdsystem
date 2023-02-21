@@ -1,6 +1,8 @@
 import datetime
 
 #from tdsystem.month_page_parser import MonthPageParser
+import sys
+sys.path.append("..")
 from month_page_parser import MonthPageParser
 
 
